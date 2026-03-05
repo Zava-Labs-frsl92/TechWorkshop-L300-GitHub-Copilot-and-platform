@@ -34,6 +34,24 @@
     },
     "foundrySkuName": {
       "value": "S0"
+    },
+    "foundryDeploymentName": {
+      "value": "Phi-4"
+    },
+    "foundryModelName": {
+      "value": "Phi-4"
+    },
+    "foundryModelVersion": {
+      "value": "7"
+    },
+    "foundryDeploymentSkuName": {
+      "value": "GlobalStandard"
+    },
+    "foundryDeploymentCapacity": {
+      "value": 1
+    },
+    "foundryEndpoint": {
+      "value": ""
     }
   }
 }

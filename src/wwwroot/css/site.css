@@ -45,3 +45,9 @@ body {
 .navbar-nav .nav-link {
   padding-right: 1rem;
 }
+
+/* Chat Styles */
+.chat-transcript {
+  white-space: pre-wrap;
+  resize: vertical;
+}

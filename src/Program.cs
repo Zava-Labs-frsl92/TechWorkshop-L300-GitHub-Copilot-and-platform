@@ -18,6 +18,8 @@ builder.Services.AddSession(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<ProductService>();
 builder.Services.AddScoped<CartService>();
+builder.Services.Configure<FoundryOptions>(builder.Configuration.GetSection("Foundry"));
+builder.Services.AddHttpClient<FoundryChatService>();
 
 var app = builder.Build();
 
