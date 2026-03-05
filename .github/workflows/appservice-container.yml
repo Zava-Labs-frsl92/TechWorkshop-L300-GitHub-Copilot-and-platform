@@ -44,14 +44,14 @@ jobs:
         run: |
           set -euo pipefail
           cat <<'EOF' > Dockerfile
-          FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+          FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
           WORKDIR /src
           COPY src/ZavaStorefront.csproj ./src/
           RUN dotnet restore ./src/ZavaStorefront.csproj
           COPY src/. ./src/
           RUN dotnet publish ./src/ZavaStorefront.csproj -c Release -o /app/publish
 
-          FROM mcr.microsoft.com/dotnet/aspnet:6.0
+          FROM mcr.microsoft.com/dotnet/aspnet:8.0
           WORKDIR /app
           COPY --from=build /app/publish .
           ENV ASPNETCORE_URLS=http://+:80
