@@ -1,0 +1,83 @@
+name: Build and deploy container to App Service
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - src/**
+      - .github/workflows/appservice-container.yml
+  pull_request:
+    branches: [ '*' ]
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'zavastorefront' }}
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Resolve ACR login server
+        id: acr
+        run: |
+          set -euo pipefail
+          login_server=$(az acr show --name "$AZURE_ACR_NAME" --query loginServer -o tsv)
+          echo "login_server=$login_server" >> "$GITHUB_OUTPUT"
+        env:
+          AZURE_ACR_NAME: ${{ vars.AZURE_ACR_NAME }}
+
+      - name: Create Dockerfile
+        run: |
+          set -euo pipefail
+          cat <<'EOF' > Dockerfile
+          FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+          WORKDIR /src
+          COPY src/ZavaStorefront.csproj ./src/
+          RUN dotnet restore ./src/ZavaStorefront.csproj
+          COPY src/. ./src/
+          RUN dotnet publish ./src/ZavaStorefront.csproj -c Release -o /app/publish
+
+          FROM mcr.microsoft.com/dotnet/aspnet:6.0
+          WORKDIR /app
+          COPY --from=build /app/publish .
+          ENV ASPNETCORE_URLS=http://+:80
+          EXPOSE 80
+          ENTRYPOINT ["dotnet", "ZavaStorefront.dll"]
+          EOF
+
+      - name: Build and push image
+        run: |
+          set -euo pipefail
+          image="${{ steps.acr.outputs.login_server }}/${IMAGE_NAME}:${IMAGE_TAG}"
+          az acr login --name "$AZURE_ACR_NAME"
+          docker build -t "$image" -f Dockerfile .
+          docker push "$image"
+        env:
+          AZURE_ACR_NAME: ${{ vars.AZURE_ACR_NAME }}
+
+      - name: Update App Service container image
+        run: |
+          set -euo pipefail
+          image="${{ steps.acr.outputs.login_server }}/${IMAGE_NAME}:${IMAGE_TAG}"
+          az webapp config container set \
+            --name "$AZURE_WEBAPP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --docker-custom-image-name "$image" \
+            --docker-registry-server-url "https://${{ steps.acr.outputs.login_server }}"
+        env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
