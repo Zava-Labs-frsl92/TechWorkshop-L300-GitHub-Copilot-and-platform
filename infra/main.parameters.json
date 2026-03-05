@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "westus3"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "appName": {
+      "value": "zavastorefront"
+    },
+    "acrSkuName": {
+      "value": "Basic"
+    },
+    "appServiceSkuName": {
+      "value": "B1"
+    },
+    "appServiceSkuTier": {
+      "value": "Basic"
+    },
+    "appServiceSkuCapacity": {
+      "value": 1
+    },
+    "containerImageName": {
+      "value": "zavastorefront"
+    },
+    "containerImageTag": {
+      "value": "latest"
+    },
+    "containerPort": {
+      "value": ""
+    },
+    "foundrySkuName": {
+      "value": "S0"
+    }
+  }
+}

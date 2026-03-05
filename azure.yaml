@@ -1,0 +1,9 @@
+name: zavastorefront
+infra:
+  path: infra
+  module: main
+services:
+  web:
+    project: ./src
+    language: csharp
+    host: appservice
