@@ -38,6 +38,25 @@ param containerPort string = ''
 @description('Azure AI Services (Foundry) SKU name.')
 param foundrySkuName string = 'S0'
 
+@description('Foundry deployment name for Phi-4.')
+param foundryDeploymentName string = 'Phi-4'
+
+@description('Foundry model name to deploy.')
+param foundryModelName string = 'Phi-4'
+
+@description('Foundry model version to deploy.')
+param foundryModelVersion string = '7'
+
+@description('Foundry deployment SKU name.')
+param foundryDeploymentSkuName string = 'GlobalStandard'
+
+@description('Foundry deployment capacity.')
+@minValue(1)
+param foundryDeploymentCapacity int = 1
+
+@description('Optional Foundry endpoint override. Leave empty to use the resource endpoint.')
+param foundryEndpoint string = ''
+
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var safeAppName = toLower(replace(appName, '-', ''))
 var baseName = toLower('${safeAppName}-${environment}')
@@ -50,6 +69,7 @@ var webAppName = toLower('web-${baseName}-${uniqueSuffix}')
 var logAnalyticsName = toLower('log-${baseName}-${uniqueSuffix}')
 var appInsightsName = toLower('appi-${baseName}-${uniqueSuffix}')
 var foundryName = toLower('ai-${baseName}-${uniqueSuffix}')
+var resolvedFoundryEndpoint = foundryEndpoint == '' ? foundry.outputs.endpoint : foundryEndpoint
 
 module logAnalytics 'modules/log-analytics.bicep' = {
   name: 'logAnalytics'
@@ -100,14 +120,14 @@ module webApp 'modules/webapp-container.bicep' = {
     containerPort: containerPort
     appInsightsConnectionString: appInsights.outputs.connectionString
     appInsightsInstrumentationKey: appInsights.outputs.instrumentationKey
+    foundryEndpoint: resolvedFoundryEndpoint
+    foundryDeploymentName: foundryDeploymentName
+    foundryResourceId: foundryResource.id
   }
 }
 
 module acrPull 'modules/role-assignment.bicep' = {
   name: 'acrPull'
-  dependsOn: [
-    acr
-  ]
   params: {
     principalId: webApp.outputs.principalId
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
@@ -121,7 +141,30 @@ module foundry 'modules/foundry.bicep' = {
     name: foundryName
     location: location
     skuName: foundrySkuName
+    deploymentName: foundryDeploymentName
+    modelName: foundryModelName
+    modelVersion: foundryModelVersion
+    deploymentSkuName: foundryDeploymentSkuName
+    deploymentCapacity: foundryDeploymentCapacity
   }
+}
+
+resource foundryResource 'Microsoft.CognitiveServices/accounts@2025-09-01' existing = {
+  name: foundryName
+}
+
+resource foundryUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(foundryResource.id, webAppName, subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c7-4388-baec-2e87135dc908'))
+  scope: foundryResource
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c7-4388-baec-2e87135dc908')
+    principalId: webApp.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [
+    foundry
+    webApp
+  ]
 }
 
 output webAppUrl string = 'https://${webApp.outputs.hostName}'

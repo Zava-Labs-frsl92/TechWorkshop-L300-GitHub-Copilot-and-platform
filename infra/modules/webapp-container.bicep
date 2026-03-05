@@ -25,6 +25,15 @@ param appInsightsConnectionString string
 @description('Application Insights instrumentation key.')
 param appInsightsInstrumentationKey string
 
+@description('Microsoft Foundry endpoint base URL.')
+param foundryEndpoint string
+
+@description('Microsoft Foundry deployment name for Phi-4.')
+param foundryDeploymentName string
+
+@description('Foundry resource id for regional endpoint authentication.')
+param foundryResourceId string
+
 var linuxFxVersion = 'DOCKER|${acrLoginServer}/${imageName}:${imageTag}'
 
 var baseAppSettings = [
@@ -47,6 +56,18 @@ var baseAppSettings = [
   {
     name: 'DOCKER_REGISTRY_SERVER_URL'
     value: 'https://${acrLoginServer}'
+  }
+  {
+    name: 'Foundry__Endpoint'
+    value: foundryEndpoint
+  }
+  {
+    name: 'Foundry__DeploymentName'
+    value: foundryDeploymentName
+  }
+  {
+    name: 'Foundry__ResourceId'
+    value: foundryResourceId
   }
 ]
 

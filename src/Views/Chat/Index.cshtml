@@ -1,0 +1,85 @@
+@{
+    ViewData["Title"] = "Chat";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-3">Chat with Phi-4</h1>
+    <p class="text-muted">Send a message and see the response appended to the transcript.</p>
+
+    <div class="mb-3">
+        <label class="form-label" for="chatTranscript">Transcript</label>
+        <textarea class="form-control chat-transcript" id="chatTranscript" rows="10" readonly></textarea>
+    </div>
+
+    <div class="input-group mb-2">
+        <input class="form-control" id="chatPrompt" type="text" placeholder="Type your message" />
+        <button class="btn btn-primary" id="chatSend" type="button">Send</button>
+    </div>
+    <div class="form-text text-muted" id="chatStatus"></div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const transcript = document.getElementById("chatTranscript");
+            const promptInput = document.getElementById("chatPrompt");
+            const sendButton = document.getElementById("chatSend");
+            const status = document.getElementById("chatStatus");
+
+            const appendLine = (label, text) => {
+                transcript.value += `${label}: ${text}\n`;
+                transcript.scrollTop = transcript.scrollHeight;
+            };
+
+            const setBusy = (isBusy) => {
+                sendButton.disabled = isBusy;
+                promptInput.disabled = isBusy;
+                status.textContent = isBusy ? "Sending..." : "";
+            };
+
+            const sendMessage = async () => {
+                const message = promptInput.value.trim();
+                if (!message) {
+                    status.textContent = "Enter a message to send.";
+                    return;
+                }
+
+                status.textContent = "";
+                appendLine("You", message);
+                promptInput.value = "";
+                setBusy(true);
+
+                try {
+                    const response = await fetch('@Url.Action("Send", "Chat")', {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ message })
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(errorText || `Request failed (${response.status})`);
+                    }
+
+                    const data = await response.json();
+                    appendLine("Phi-4", data.reply || "(no response)");
+                } catch (error) {
+                    appendLine("System", "Something went wrong while calling the chat service.");
+                    console.error(error);
+                } finally {
+                    setBusy(false);
+                }
+            };
+
+            sendButton.addEventListener("click", sendMessage);
+            promptInput.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            });
+        })();
+    </script>
+}

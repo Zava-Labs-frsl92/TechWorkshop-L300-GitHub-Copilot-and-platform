@@ -9,6 +9,7 @@ A simple e-commerce storefront application built with .NET 6 ASP.NET MVC.
 - **Cart Management**: View cart, update quantities, remove items
 - **Checkout**: Simple checkout process that clears cart and shows success message
 - **Responsive Design**: Mobile-friendly layout using Bootstrap 5
+- **Chat with Phi-4**: Separate chat page that sends prompts to Microsoft Foundry and appends responses to a transcript
 
 ## Technology Stack
 
@@ -116,3 +117,14 @@ The application includes structured logging for:
 - Checkout process
 
 Logs are written to console during development.
+
+## Chat Configuration (Microsoft Foundry)
+
+The chat page calls a Microsoft Foundry model deployment using managed identity.
+Configure the following settings via environment variables or `appsettings.json`:
+
+- `Foundry__Endpoint`: OpenAI-compatible base endpoint (for example, `https://<foundry-name>.openai.azure.com/openai/v1/`)
+- `Foundry__DeploymentName`: Deployment name for the Phi-4 model (default: `Phi-4`)
+- `Foundry__ResourceId`: Required only when using regional `*.api.cognitive.microsoft.com` endpoints
+
+For local development, sign in with `az login` so `DefaultAzureCredential` can obtain a token.
